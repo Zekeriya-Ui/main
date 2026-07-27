@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flyrank Signal Monitor | Personal Intelligence Terminal</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ink: {
+                            DEFAULT: '#0B0F19',
+                            card: '#131B2E',
+                            border: '#1E293B',
+                            hover: '#1a243b'
+                        },
+                        amber: {
+                            signal: '#D97706',
+                            glow: 'rgba(217, 119, 6, 0.15)'
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['Newsreader', 'serif'],
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0B0F19;
+            color: #F8FAFC;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0B0F19;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1E293B;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+        /* Scanning line animation */
+        @keyframes scanline {
+            0% { transform: translateY(-100%); opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { transform: translateY(1000%); opacity: 0; }
+        }
+        .animate-scan {
+            animation: scanline 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans selection:bg-amber-signal selection:text-white">
+
+    <!-- Top Ticker / Header -->
+    <header class="border-b border-ink-border bg-ink/90 backdrop-blur sticky top-0 z-30 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2">
+                <span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-signal animate-pulse"></span>
+                <span class="font-mono text-xs uppercase tracking-widest text-slate-400">Flyrank // Terminal v1.0</span>
+            </div>
+            <h1 class="font-serif text-xl md:text-2xl font-medium tracking-tight text-slate-100 hidden sm:inline">Signal Monitor</h1>
+        </div>
+        
+        <div class="flex items-center space-x-4 font-mono text-xs">
+            <span class="hidden md:inline text-slate-400">ENGINE: <span class="text-slate-200">Claude-3.5-Sonnet</span></span>
+            <span class="text-slate-500">|</span>
+            <span id="current-utc" class="text-amber-signal font-medium">--:--:-- UTC</span>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left Column: Controls & Archive list (4 cols) -->
+        <section class="lg:col-span-4 flex flex-col space-y-6">
+            
+            <!-- Query Control Box -->
+            <div class="bg-ink-card border border-ink-border rounded-xl p-5 shadow-xl relative overflow-hidden">
+                <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-amber-signal to-transparent opacity-50"></div>
+                
+                <h2 class="font-serif text-lg font-medium text-slate-200 mb-2">Initialize Scan</h2>
+                <p class="text-xs text-slate-400 mb-4 font-mono">Target a domain, technology, or macro signal for live web collection.</p>
+                
+                <form id="scan-form" class="space-y-4">
+                    <div>
+                        <label for="query-input" class="block font-mono text-xs text-slate-400 mb-1.5 uppercase">Signal Topic / Query</label>
+                        <input type="text" id="query-input" required placeholder="e.g., Autonomous agent frameworks 2026" 
+                            class="w-full bg-ink border border-ink-border rounded-lg px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-amber-signal font-sans transition-colors">
+                    </div>
+
+                    <div>
+                        <label for="api-key-input" class="block font-mono text-xs text-slate-400 mb-1.5 uppercase">Anthropic API Key</label>
+                        <input type="password" id="api-key-input" required placeholder="sk-ant-..." 
+                            class="w-full bg-ink border border-ink-border rounded-lg px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-amber-signal font-mono transition-colors">
+                        <p class="text-[10px] text-slate-500 mt-1">Stored securely in your browser's localStorage.</p>
+                    </div>
+
+                    <button type="submit" id="scan-btn" 
+                        class="w-full bg-amber-signal/90 hover:bg-amber-signal text-ink font-mono text-xs font-semibold uppercase tracking-wider py-3 rounded-lg transition-all shadow-lg shadow-amber-glow flex items-center justify-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        <span>Run Signal Scan</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Running Archive Sidebar -->
+            <div class="bg-ink-card border border-ink-border rounded-xl p-5 flex-1 flex flex-col shadow-xl min-h-[300px]">
+                <div class="flex items-center justify-between mb-4 pb-2 border-b border-ink-border">
+                    <h3 class="font-mono text-xs uppercase tracking-wider text-slate-400">Signal Archive (<span id="archive-count">0</span>)</h3>
+                    <button id="clear-archive-btn" class="text-[10px] font-mono text-slate-500 hover:text-red-400 transition-colors uppercase">Clear All</button>
+                </div>
+                
+                <div id="archive-list" class="space-y-2.5 overflow-y-auto flex-1 pr-1">
+                    <!-- Populated dynamically via JS -->
+                    <div id="archive-empty" class="text-center py-10 font-mono text-xs text-slate-600">
+                        No saved digests yet. Run a scan to build your archive.
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Right Column: Active Viewer & Scanning State (8 cols) -->
+        <section class="lg:col-span-8 flex flex-col">
+            
+            <div class="bg-ink-card border border-ink-border rounded-xl flex-1 flex flex-col shadow-xl relative overflow-hidden min-h-[600px]">
+                
+                <!-- Scanning Overlay / Animation State -->
+                <div id="scanning-state" class="hidden absolute inset-0 bg-ink/90 backdrop-blur-md z-20 flex flex-col items-center justify-center p-6">
+                    <div class="relative w-full max-w-md h-32 border border-amber-signal/30 rounded-lg overflow-hidden bg-ink-border/20 flex flex-col items-center justify-center">
+                        <!-- Scanning beam -->
+                        <div class="absolute inset-x-0 h-1 bg-amber-signal shadow-[0_0_15px_#D97706] animate-scan"></div>
+                        <div class="font-mono text-xs text-amber-signal uppercase tracking-widest mb-2 animate-pulse" id="scan-status-text">Querying live web signals...</div>
+                        <div class="font-mono text-[10px] text-slate-400 text-center px-4" id="scan-sub-text">Synthesizing findings into structured Markdown digest</div>
+                    </div>
+                </div>
+
+                <!-- Viewer Header Toolbar -->
+                <div class="border-b border-ink-border px-6 py-3.5 flex items-center justify-between bg-ink/40">
+                    <div class="flex items-center space-x-2">
+                        <span class="font-mono text-xs text-slate-400 uppercase tracking-wide">Output Viewer</span>
+                        <span id="active-query-tag" class="hidden font-mono text-[10px] bg-amber-signal/10 text-amber-signal border border-amber-signal/30 px-2 py-0.5 rounded"></span>
+                    </div>
+                    
+                    <div id="viewer-actions" class="hidden items-center space-x-3">
+                        <button id="copy-markdown-btn" class="font-mono text-xs text-slate-400 hover:text-slate-100 flex items-center space-x-1.5 transition-colors bg-ink border border-ink-border px-3 py-1.5 rounded">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                            <span>Copy Markdown</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Viewer Body / Content Area -->
+                <div id="viewer-content" class="p-6 md:p-8 flex-1 overflow-y-auto">
+                    <div class="h-full flex flex-col items-center justify-center text-center py-20">
+                        <div class="w-12 h-12 rounded-full border border-ink-border flex items-center justify-center text-slate-600 mb-4">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                        </div>
+                        <h3 class="font-serif text-lg font-medium text-slate-300 mb-1">No Signal Selected</h3>
+                        <p class="text-xs text-slate-500 font-mono max-w-sm">Enter a topic on the left to initiate real-time web intelligence and structured markdown generation.</p>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-ink-border py-4 px-6 text-center font-mono text-[11px] text-slate-500">
+        Flyrank AI Signal Monitor // Self-Contained Interactive Artifact
+    </footer>
+
+    <!-- Script / Logic -->
+    <script>
+        // Clock updater
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('current-utc').textContent = now.toUTCString().split(' ')[4] + ' UTC';
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // State Management
+        let archive = JSON.parse(localStorage.getItem('flyrank_signal_archive') || '[]');
+        const apiKeyInput = document.getElementById('api-key-input');
+        
+        // Load saved API key if present
+        const savedKey = localStorage.getItem('flyrank_anthropic_key');
+        if (savedKey) {
+            apiKeyInput.value = savedKey;
+        }
+
+        apiKeyInput.addEventListener('input', (e) => {
+            localStorage.setItem('flyrank_anthropic_key', e.target.value.trim());
+        });
+
+        // Initialize Archive UI
+        renderArchive();
+
+        // Form Submission
+        document.getElementById('scan-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const query = document.getElementById('query-input').value.trim();
+            const apiKey = apiKeyInput.value.trim();
+
+            if (!query || !apiKey) {
+                alert('Please provide both a signal topic and your Anthropic API key.');
+                return;
+            }
+
+            // Show scanning state with dynamic status text updates
+            const scanningState = document.getElementById('scanning-state');
+            const statusText = document.getElementById('scan-status-text');
+            scanningState.classList.remove('hidden');
+
+            const statusMessages = [
+                "Querying live web signals...",
+                "Extracting technical intelligence & documentation...",
+                "Filtering noise and synthesizing key trends...",
+                "Formatting Markdown digest with amber signal lines..."
+            ];
+            let msgIdx = 0;
+            const statusInterval = setInterval(() => {
+                msgIdx = (msgIdx + 1) % statusMessages.length;
+                statusText.textContent = statusMessages[msgIdx];
+            }, 2500);
+
+            try {
+                // Call Claude API with web search tool enabled
+                const response = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': apiKey,
+                        'anthropic-version': '2023-06-01',
+                        'anthropic-dangerous-direct-browser-access': 'true'
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-3-5-sonnet-20241022',
+                        max_tokens: 4000,
+                        tools: [{
+                            type: "web_search_20250119",
+                            name: "web_search"
+                        }],
+                        system: `You are the core intelligence engine of Flyrank AI's Signal Monitor, a private intelligence terminal designed to catch signals early. When the user provides a topic, use web search to gather the latest state-of-the-art developments, emerging patterns, and technical breakthroughs.
+Structure your output cleanly in Markdown using the following strict layout:
+1. # [Clear Headline using editorial serif tone]
+2. A metadata bar in monospace: `TIMESTAMP | SOURCES: [Domain names]`
+3. ## Executive Pulse
+4. ## Key Technical Signals (bulleted technical breakdown)
+5. A dedicated callout line for the definitive takeaway formatted as:
+> **SIGNAL LINE:** [Your precise, amber-worthy takeaway on why this matters]
+6. ## Forward Outlook`,
+                        messages: [{
+                            role: 'user',
+                            content: `Scan and analyze live signals for the following topic: ${query}`
+                        }]
+                    })
+                });
+
+                const data = await response.json();
+                clearInterval(statusInterval);
+                scanningState.classList.add('hidden');
+
+                if (data.error) {
+                    throw new Error(data.error.message || 'API Error occurred');
+                }
+
+                // Extract text from response blocks
+                let markdownContent = '';
+                if (data.content && Array.isArray(data.content)) {
+                    for (const block of data.content) {
+                        if (block.type === 'text') {
+                            markdownContent += block.text;
+                        }
+                    }
+                }
+
+                if (!markdownContent) {
+                    markdownContent = "# Scan Completed\n\nNo structured text returned from the model.";
+                }
+
+                // Save to archive
+                const newDigest = {
+                    id: 'sig_' + Date.now(),
+                    query: query,
+                    timestamp: new Date().toISOString(),
+                    content: markdownContent
+                };
+
+                archive.unshift(newDigest);
+                localStorage.setItem('flyrank_signal_archive', JSON.stringify(archive));
+                renderArchive();
+                displayDigest(newDigest);
+
+            } catch (err) {
+                clearInterval(statusInterval);
+                scanningState.classList.add('hidden');
+                alert('Error executing signal scan: ' + err.message);
+            }
+        });
+
+        // Render Archive List
+        function renderArchive() {
+            const listEl = document.getElementById('archive-list');
+            const countEl = document.getElementById('archive-count');
+            const emptyEl = document.getElementById('archive-empty');
+
+            countEl.textContent = archive.length;
+
+            if (archive.length === 0) {
+                emptyEl.classList.remove('hidden');
+                // Remove existing items except empty state
+                Array.from(listEl.children).forEach(child => {
+                    if (child.id !== 'archive-empty') child.remove();
+                });
+                return;
+            }
+
+            emptyEl.classList.add('hidden');
+            
+            // Re-render items
+            // Clear current items except empty
+            Array.from(listEl.children).forEach(child => {
+                if (child.id !== 'archive-empty') child.remove();
+            });
+
+            archive.forEach((item, index) => {
+                const dateObj = new Date(item.timestamp);
+                const timeStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                const card = document.createElement('div');
+                card.className = `p-3 rounded-lg border border-ink-border bg-ink cursor-pointer hover:border-amber-signal/50 transition-all group relative`;
+                card.innerHTML = `
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-mono text-[10px] text-amber-signal">${timeStr}</span>
+                        <span class="font-mono text-[10px] text-slate-500 uppercase">Signal #${archive.length - index}</span>
+                    </div>
+                    <h4 class="font-serif text-sm font-medium text-slate-200 group-hover:text-amber-signal transition-colors line-clamp-1">${escapeHtml(item.query)}</h4>
+                `;
+                card.addEventListener('click', () => displayDigest(item));
+                listEl.appendChild(card);
+            });
+        }
+
+        // Display Digest in Viewer
+        function displayDigest(item) {
+            const viewerContent = document.getElementById('viewer-content');
+            const activeQueryTag = document.getElementById('active-query-tag');
+            const viewerActions = document.getElementById('viewer-actions');
+
+            activeQueryTag.textContent = item.query;
+            activeQueryTag.classList.remove('hidden');
+            viewerActions.classList.remove('hidden');
+            viewerActions.classList.add('flex');
+
+            // Simple parser to format markdown nicely into the editorial theme
+            viewerContent.innerHTML = formatMarkdownToHTML(item.content);
+        }
+
+        // Custom lightweight Markdown to HTML formatter adhering to design guidance
+        function formatMarkdownToHTML(md) {
+            let html = md
+                // Headers
+                .replace(/^# (.*$)/gm, '<h1 class="font-serif text-2xl md:text-3xl font-medium text-slate-100 mb-4 tracking-tight">$1</h1>')
+                .replace(/^## (.*$)/gm, '<h2 class="font-serif text-lg md:text-xl font-medium text-slate-200 mt-6 mb-3 border-b border-ink-border pb-1">$1</h2>')
+                .replace(/^### (.*$)/gm, '<h3 class="font-serif text-base font-medium text-slate-300 mt-4 mb-2">$1</h3>')
+                // Blockquotes (specially styled for the amber signal line)
+                .replace(/^> \*\*SIGNAL LINE:\*\* (.*$)/gm, '<div class="my-6 p-4 rounded-lg bg-amber-glow border-l-2 border-amber-signal font-serif text-base md:text-lg text-slate-100 italic"><span class="font-mono text-xs uppercase tracking-widest text-amber-signal not-italic block mb-1">Signal Takeaway</span>"$1"</div>')
+                .replace(/^> (.*$)/gm, '<blockquote class="border-l-2 border-slate-600 pl-4 my-4 text-slate-400 italic text-sm">$1</blockquote>')
+                // Bold & Code
+                .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-slate-200">$1</strong>')
+                .replace(/`([^`]+)`/g, '<code class="font-mono text-xs bg-ink-border px-1.5 py-0.5 rounded text-amber-signal">$1</code>')
+                // Lists
+                .replace(/^\* (.*$)/gm, '<li class="ml-4 list-disc text-sm text-slate-300 my-1 font-sans">$1</li>')
+                .replace(/^- (.*$)/gm, '<li class="ml-4 list-disc text-sm text-slate-300 my-1 font-sans">$1</li>');
+
+            // Paragraphs for remaining text lines
+            const lines = html.split('\n');
+            let processedLines = lines.map(line => {
+                if (line.trim().startsWith('<h') || line.trim().startsWith('<li') || line.trim().startsWith('<div') || line.trim().startsWith('<blockquote') || line.trim() === '') {
+                    return line;
+                }
+                return `<p class="text-sm text-slate-300 my-2 leading-relaxed font-sans">${line}</p>`;
+            });
+
+            return `<div class="space-y-3">${processedLines.join('\n')}</div>`;
+        }
+
+        // Copy Markdown Action
+        document.getElementById('copy-markdown-btn').addEventListener('click', () => {
+            const activeTag = document.getElementById('active-query-tag').textContent;
+            const currentItem = archive.find(i => i.query === activeTag);
+            if (currentItem) {
+                navigator.clipboard.writeText(currentItem.content);
+                const btn = document.getElementById('copy-markdown-btn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<span class="text-amber-signal">Copied to Clipboard!</span>';
+                setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+            }
+        });
+
+        // Clear Archive Action
+        document.getElementById('clear-archive-btn').addEventListener('click', () => {
+            if (confirm('Are you sure you want to clear your saved signal archive?')) {
+                archive = [];
+                localStorage.removeItem('flyrank_signal_archive');
+                renderArchive();
+                document.getElementById('viewer-content').innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-center py-20">
+                        <div class="w-12 h-12 rounded-full border border-ink-border flex items-center justify-center text-slate-600 mb-4">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                        </div>
+                        <h3 class="font-serif text-lg font-medium text-slate-300 mb-1">No Signal Selected</h3>
+                        <p class="text-xs text-slate-500 font-mono max-w-sm">Enter a topic on the left to initiate real-time web intelligence and structured markdown generation.</p>
+                    </div>
+                `;
+                document.getElementById('active-query-tag').classList.add('hidden');
+                document.getElementById('viewer-actions').classList.remove('flex');
+                document.getElementById('viewer-actions').classList.add('hidden');
+            }
+        });
+
+        function escapeHtml(text) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+    </script>
+</body>
+</html>
